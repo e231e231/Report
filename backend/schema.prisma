@@ -1,0 +1,148 @@
+// Prisma Schema for DailyReport System
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 従業員テーブル
+model Employee {
+  id            String         @id @db.VarChar(20)
+  userName      String         @map("user_name") @db.VarChar(20)
+  password      String         @db.VarChar(255) // ハッシュ化されたパスワード用に長さ増加
+  employeeName  String         @map("employee_name") @db.VarChar(20)
+  role          Int
+  color         String?        @db.VarChar(7)
+  isDeleted     Int            @default(0) @map("is_deleted")
+
+  // リレーション
+  dailyReports  DailyReport[]
+  feedbacks     Feedback[]
+  reactions     Reaction[]
+  mails         Mail[]
+  employeeRole  EmployeeRole   @relation(fields: [role], references: [roleNumber])
+
+  @@index([userName])
+  @@map("employee")
+}
+
+// 従業員ロールテーブル
+model EmployeeRole {
+  roleNumber    Int            @id @map("role_number")
+  roleName      String?        @map("role_name") @db.VarChar(50)
+
+  // リレーション
+  employees     Employee[]
+
+  @@map("employee_role")
+}
+
+// 日報テーブル
+model DailyReport {
+  id            String         @id @db.VarChar(20)
+  employeeId    String         @map("employee_id") @db.VarChar(20)
+  date          DateTime       @default(now())
+  calendar      DateTime
+  content       String         @db.Text
+  year          Int
+  editCheck     Int            @default(0) @map("edit_check")
+  weekFlag      Int            @default(0) @map("week_flag")
+
+  // リレーション
+  employee      Employee       @relation(fields: [employeeId], references: [id])
+  feedbacks     Feedback[]
+  reactions     Reaction[]
+
+  @@index([employeeId])
+  @@index([calendar])
+  @@index([year])
+  @@index([calendar, employeeId])
+  @@map("daily_report")
+}
+
+// フィードバックテーブル
+model Feedback {
+  id               String         @id @db.VarChar(20)
+  dailyReportId    String         @map("daily_report_id") @db.VarChar(20)
+  employeeId       String         @map("employee_id") @db.VarChar(20)
+  date             DateTime       @default(now())
+  content          String         @db.Text
+  toReplyFbid      String?        @map("to_reply_fbid") @db.VarChar(20)
+  editCheck        Int            @default(0) @map("edit_check")
+
+  // リレーション
+  dailyReport      DailyReport    @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  employee         Employee       @relation(fields: [employeeId], references: [id])
+  replyTo          Feedback?      @relation("FeedbackReplies", fields: [toReplyFbid], references: [id])
+  replies          Feedback[]     @relation("FeedbackReplies")
+  reactions        Reaction[]
+
+  @@index([dailyReportId])
+  @@index([employeeId])
+  @@index([toReplyFbid])
+  @@map("feedback")
+}
+
+// リアクションテーブル
+model Reaction {
+  id               String         @id @db.VarChar(20)
+  employeeId       String         @map("employee_id") @db.VarChar(20)
+  dailyReportId    String?        @map("daily_report_id") @db.VarChar(20)
+  feedbackId       String?        @map("feedback_id") @db.VarChar(20)
+  emojiId          String         @map("emoji_id") @db.VarChar(20)
+
+  // リレーション
+  employee         Employee       @relation(fields: [employeeId], references: [id])
+  dailyReport      DailyReport?   @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  feedback         Feedback?      @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  emoji            Emoji          @relation(fields: [emojiId], references: [id])
+
+  @@index([dailyReportId])
+  @@index([feedbackId])
+  @@index([employeeId])
+  @@index([dailyReportId, emojiId])
+  @@index([feedbackId, emojiId])
+  @@map("reaction")
+}
+
+// 絵文字テーブル
+model Emoji {
+  id               String         @id @db.VarChar(20)
+  emojiContent     String?        @map("emoji_content") @db.VarChar(50)
+
+  // リレーション
+  reactions        Reaction[]
+
+  @@map("emoji")
+}
+
+// お知らせテーブル
+model Information {
+  id               String         @id @db.VarChar(20)
+  title            String         @db.VarChar(200)
+  content          String         @db.Text
+  date             DateTime       @default(now())
+
+  @@map("information")
+}
+
+// 管理者連絡テーブル
+model Mail {
+  id               String         @id @db.VarChar(20)
+  employeeId       String         @map("employee_id") @db.VarChar(20)
+  employeeName     String         @map("employee_name") @db.VarChar(20)
+  date             DateTime       @default(now())
+  content          String         @db.Text
+  state            Int            @default(0)
+
+  // リレーション
+  employee         Employee       @relation(fields: [employeeId], references: [id])
+
+  @@index([state])
+  @@map("mail")
+}
