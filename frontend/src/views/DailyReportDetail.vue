@@ -9,7 +9,7 @@
         </div>
       </div>
 
-      <div v-if="report" class="report-card">
+      <div v-if="report" class="report-card" :style="{ borderLeftColor: report.employee?.color || '#3498db' }">
         <div class="report-header">
           <div class="d-flex justify-content-between align-items-start">
             <div>
@@ -262,6 +262,7 @@ onMounted(() => {
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 30px;
+  border-left: 4px solid #3498db;
 }
 
 .report-header {

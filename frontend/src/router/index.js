@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/auth';
 const routes = [
   {
     path: '/',
-    redirect: '/login'
+    redirect: '/home'
   },
   {
     path: '/login',
@@ -63,6 +63,12 @@ const routes = [
   {
     path: '/information/new',
     name: 'InformationRegister',
+    component: () => import('@/views/InformationForm.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/information/:id/edit',
+    name: 'InformationEdit',
     component: () => import('@/views/InformationForm.vue'),
     meta: { requiresAuth: true, requiresAdmin: true }
   },

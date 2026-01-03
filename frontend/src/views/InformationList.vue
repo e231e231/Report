@@ -21,9 +21,6 @@
         >
           <div class="info-header">
             <div>
-              <span :class="['badge', 'me-2', getCategoryBadgeClass(info.category)]">
-                {{ info.category }}
-              </span>
               <span class="text-muted">{{ formatDate(info.date) }}</span>
             </div>
             <div v-if="authStore.isAdmin" class="info-actions">
@@ -45,10 +42,6 @@
           <h4 class="info-title">{{ info.title }}</h4>
           <div class="info-content">
             <MarkdownRenderer :content="info.content" />
-          </div>
-
-          <div class="info-footer">
-            <small class="text-muted">作成者: {{ info.employeeName }}</small>
           </div>
         </div>
 
@@ -110,7 +103,7 @@ const getCategoryBadgeClass = (category) => {
 const loadInformation = async () => {
   isLoading.value = true;
   try {
-    const response = await informationService.getAll();
+    const response = await informationService.getList();
     informationList.value = response.data;
   } catch (error) {
     notificationStore.error('お知らせの取得に失敗しました');

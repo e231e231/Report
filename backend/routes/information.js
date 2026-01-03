@@ -41,4 +41,30 @@ router.post('/', requireAuth, requireAdmin, async (req, res, next) => {
   }
 });
 
+// お知らせ更新（管理者のみ）
+router.put('/:id', requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const { title, content } = req.body;
+
+    const information = await informationService.updateInformation(req.params.id, {
+      title: sanitizeHtml(title),
+      content: sanitizeHtml(content)
+    });
+
+    res.json({ success: true, data: information });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// お知らせ削除（管理者のみ）
+router.delete('/:id', requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    await informationService.deleteInformation(req.params.id);
+    res.json({ success: true, message: 'お知らせを削除しました' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

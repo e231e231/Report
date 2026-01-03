@@ -101,6 +101,72 @@ class InformationService {
       throw error;
     }
   }
+
+  /**
+   * お知らせの更新
+   * @param {string} id - お知らせID
+   * @param {object} data - 更新データ
+   * @returns {object} 更新されたお知らせ
+   */
+  async updateInformation(id, data) {
+    try {
+      const existing = await prisma.information.findUnique({
+        where: { id }
+      });
+
+      if (!existing) {
+        const error = new Error('お知らせが見つかりません');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      const information = await prisma.information.update({
+        where: { id },
+        data: {
+          title: data.title,
+          content: data.content,
+          date: new Date()
+        }
+      });
+
+      logger.info(`Information updated: ${id}`);
+      return information;
+
+    } catch (error) {
+      logger.error(`Information update error: ${error.message}`, { id });
+      throw error;
+    }
+  }
+
+  /**
+   * お知らせの削除
+   * @param {string} id - お知らせID
+   * @returns {object} 削除結果
+   */
+  async deleteInformation(id) {
+    try {
+      const information = await prisma.information.findUnique({
+        where: { id }
+      });
+
+      if (!information) {
+        const error = new Error('お知らせが見つかりません');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      await prisma.information.delete({
+        where: { id }
+      });
+
+      logger.info(`Information deleted: ${id}`);
+      return { message: 'お知らせを削除しました' };
+
+    } catch (error) {
+      logger.error(`Information deletion error: ${error.message}`, { id });
+      throw error;
+    }
+  }
 }
 
 module.exports = new InformationService();

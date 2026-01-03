@@ -109,7 +109,7 @@ class FeedbackService {
   /**
    * メンション一覧を取得
    * @param {string} employeeId - 従業員ID
-   * @returns {object} 自分宛てのコメントと返信のリスト
+   * @returns {Array} 自分宛てのコメントと返信のリスト
    */
   async getMentionList(employeeId) {
     try {
@@ -134,7 +134,12 @@ class FeedbackService {
           dailyReport: {
             select: {
               id: true,
-              calendar: true
+              calendar: true,
+              employee: {
+                select: {
+                  employeeName: true
+                }
+              }
             }
           }
         },
@@ -168,19 +173,50 @@ class FeedbackService {
           dailyReport: {
             select: {
               id: true,
-              calendar: true
+              calendar: true,
+              employee: {
+                select: {
+                  employeeName: true
+                }
+              }
             }
           }
         },
         orderBy: { date: 'desc' }
       });
 
-      logger.info(`Mention list retrieved for employee: ${employeeId}`);
+      // 統一フォーマットに変換
+      const formattedComments = myReportComments.map(comment => ({
+        id: comment.id,
+        dailyReportId: comment.dailyReport.id,
+        dailyReportDate: comment.dailyReport.calendar,
+        dailyReportEmployeeName: comment.dailyReport.employee.employeeName,
+        feedbackEmployeeName: comment.employee.employeeName,
+        feedbackEmployeeColor: comment.employee.color,
+        feedbackContent: comment.content,
+        feedbackDate: comment.date,
+        type: 'comment'
+      }));
 
-      return {
-        comments: myReportComments,
-        replies: myCommentReplies
-      };
+      const formattedReplies = myCommentReplies.map(reply => ({
+        id: reply.id,
+        dailyReportId: reply.dailyReport.id,
+        dailyReportDate: reply.dailyReport.calendar,
+        dailyReportEmployeeName: reply.dailyReport.employee.employeeName,
+        feedbackEmployeeName: reply.employee.employeeName,
+        feedbackEmployeeColor: reply.employee.color,
+        feedbackContent: reply.content,
+        feedbackDate: reply.date,
+        type: 'reply'
+      }));
+
+      // 結合してソート
+      const allMentions = [...formattedComments, ...formattedReplies];
+      allMentions.sort((a, b) => new Date(b.feedbackDate) - new Date(a.feedbackDate));
+
+      logger.info(`Mention list retrieved for employee: ${employeeId}, count: ${allMentions.length}`);
+
+      return allMentions;
 
     } catch (error) {
       logger.error(`Get mention list error: ${error.message}`, { employeeId });

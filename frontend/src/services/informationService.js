@@ -30,5 +30,26 @@ export default {
   async create(data) {
     const response = await api.post('/information', data);
     return response.data;
+  },
+
+  /**
+   * お知らせ更新
+   * @param {string} id - お知らせID
+   * @param {object} data - 更新データ
+   * @returns {Promise} レスポンス
+   */
+  async update(id, data) {
+    const response = await api.put(`/information/${id}`, data);
+    return response.data;
+  },
+
+  /**
+   * お知らせ削除
+   * @param {string} id - お知らせID
+   * @returns {Promise} レスポンス
+   */
+  async delete(id) {
+    const response = await api.delete(`/information/${id}`);
+    return response.data;
   }
 };

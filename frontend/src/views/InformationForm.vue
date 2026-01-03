@@ -30,26 +30,6 @@
           </div>
 
           <div class="mb-3">
-            <label for="category" class="form-label required">カテゴリ</label>
-            <select
-              id="category"
-              v-model="form.category"
-              class="form-select"
-              :class="{ 'is-invalid': errors.category }"
-              required
-            >
-              <option value="">選択してください</option>
-              <option value="お知らせ">お知らせ</option>
-              <option value="重要">重要</option>
-              <option value="メンテナンス">メンテナンス</option>
-              <option value="その他">その他</option>
-            </select>
-            <div v-if="errors.category" class="invalid-feedback">
-              {{ errors.category }}
-            </div>
-          </div>
-
-          <div class="mb-3">
             <label for="content" class="form-label required">内容</label>
             <MarkdownEditor
               v-model="form.content"
@@ -111,30 +91,22 @@ const isEditMode = computed(() => !!route.params.id);
 
 const form = reactive({
   title: '',
-  category: '',
   content: ''
 });
 
 const errors = reactive({
   title: '',
-  category: '',
   content: ''
 });
 
 const validateForm = () => {
   errors.title = '';
-  errors.category = '';
   errors.content = '';
 
   let isValid = true;
 
   if (!form.title.trim()) {
     errors.title = 'タイトルを入力してください';
-    isValid = false;
-  }
-
-  if (!form.category) {
-    errors.category = 'カテゴリを選択してください';
     isValid = false;
   }
 
@@ -151,11 +123,10 @@ const loadInformation = async () => {
 
   isLoading.value = true;
   try {
-    const response = await informationService.getById(route.params.id);
+    const response = await informationService.getDetail(route.params.id);
     const info = response.data;
 
     form.title = info.title;
-    form.category = info.category;
     form.content = info.content;
   } catch (error) {
     notificationStore.error('お知らせの取得に失敗しました');
@@ -176,14 +147,12 @@ const handleSubmit = async () => {
     if (isEditMode.value) {
       await informationService.update(route.params.id, {
         title: form.title,
-        category: form.category,
         content: form.content
       });
       notificationStore.success('お知らせを更新しました');
     } else {
       await informationService.create({
         title: form.title,
-        category: form.category,
         content: form.content
       });
       notificationStore.success('お知らせを登録しました');

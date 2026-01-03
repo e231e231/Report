@@ -121,6 +121,7 @@
                 v-for="report in sortedReports"
                 :key="report.id"
                 class="timeline-item"
+                :style="{ borderLeftColor: report.employeeColor || '#3498db' }"
               >
                 <div class="timeline-header">
                   <span class="timeline-datetime">

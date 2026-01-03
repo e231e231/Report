@@ -1,7 +1,7 @@
 <template>
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container-fluid">
-      <router-link class="navbar-brand" to="/daily-reports">
+      <router-link class="navbar-brand" to="/">
         {{ appTitle }}
       </router-link>
 

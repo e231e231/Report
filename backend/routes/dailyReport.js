@@ -3,8 +3,8 @@ const router = express.Router();
 const dailyReportController = require('../controllers/dailyReportController');
 const { requireAuth, requireAdmin, requireNonAdmin } = require('../middleware/auth');
 
-// 日報登録（管理者以外）
-router.post('/', requireAuth, requireNonAdmin, dailyReportController.create);
+// 日報登録（全ユーザー）
+router.post('/', requireAuth, dailyReportController.create);
 
 // 日報一覧取得
 router.get('/', requireAuth, dailyReportController.getList);
