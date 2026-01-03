@@ -1,19 +1,55 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
 
 const prisma = new PrismaClient();
 
+// JWT設定
+const JWT_SECRET = process.env.JWT_SECRET || 'your-jwt-secret-key-change-in-production';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+
 /**
  * 認証サービス
- * 優先度「緊急」のパスワードハッシュ化を実装
+ * JWT認証を実装
  */
 class AuthService {
+  /**
+   * JWTトークンの生成
+   * @param {object} employee - 従業員情報
+   * @returns {string} JWTトークン
+   */
+  generateToken(employee) {
+    const payload = {
+      id: employee.id,
+      userName: employee.userName,
+      employeeName: employee.employeeName,
+      role: employee.role,
+      color: employee.color
+    };
+
+    return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  }
+
+  /**
+   * JWTトークンの検証
+   * @param {string} token - JWTトークン
+   * @returns {object|null} デコードされたペイロード、失敗時はnull
+   */
+  verifyToken(token) {
+    try {
+      return jwt.verify(token, JWT_SECRET);
+    } catch (error) {
+      logger.warn(`Token verification failed: ${error.message}`);
+      return null;
+    }
+  }
+
   /**
    * ログイン処理
    * @param {string} userName - ユーザー名
    * @param {string} password - パスワード
-   * @returns {object|null} 認証成功時は従業員情報、失敗時はnull
+   * @returns {object|null} 認証成功時は従業員情報とトークン、失敗時はnull
    */
   async login(userName, password) {
     try {
@@ -44,7 +80,14 @@ class AuthService {
 
       // パスワードを除外して返す
       const { password: _, ...employeeWithoutPassword } = employee;
-      return employeeWithoutPassword;
+      
+      // JWTトークンを生成
+      const token = this.generateToken(employeeWithoutPassword);
+      
+      return {
+        employee: employeeWithoutPassword,
+        token
+      };
 
     } catch (error) {
       logger.error(`Login error: ${error.message}`, { userName });

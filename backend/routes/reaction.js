@@ -27,7 +27,7 @@ router.post('/toggle', requireAuth, async (req, res, next) => {
     const { targetId, emojiId, isFeedback } = req.body;
 
     const result = await reactionService.toggleReaction({
-      employeeId: req.session.employeeId,
+      employeeId: req.user.employeeId,
       targetId,
       emojiId,
       isFeedback: isFeedback || false

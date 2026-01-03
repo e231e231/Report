@@ -38,7 +38,7 @@ router.put('/:id', requireAuth, async (req, res, next) => {
     const feedback = await feedbackService.updateFeedback(
       id,
       { content: sanitizeHtml(content) },
-      req.session.employeeId
+      req.user.employeeId
     );
 
     res.json({ success: true, data: feedback });
@@ -50,7 +50,7 @@ router.put('/:id', requireAuth, async (req, res, next) => {
 // メンション一覧
 router.get('/mentions', requireAuth, async (req, res, next) => {
   try {
-    const mentions = await feedbackService.getMentionList(req.session.employeeId);
+    const mentions = await feedbackService.getMentionList(req.user.employeeId);
     res.json({ success: true, data: mentions });
   } catch (error) {
     next(error);
@@ -61,7 +61,7 @@ router.get('/mentions', requireAuth, async (req, res, next) => {
 router.get('/mentions/recent', requireAuth, async (req, res, next) => {
   try {
     const limit = parseInt(req.query.limit) || 5;
-    const recentMentions = await feedbackService.getRecentMentions(req.session.employeeId, limit);
+    const recentMentions = await feedbackService.getRecentMentions(req.user.employeeId, limit);
     res.json({ success: true, data: recentMentions });
   } catch (error) {
     next(error);

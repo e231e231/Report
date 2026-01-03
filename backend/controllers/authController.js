@@ -25,21 +25,16 @@ class AuthController {
       const sanitizedUserName = sanitizeText(userName);
 
       // 認証
-      const employee = await authService.login(sanitizedUserName, password);
+      const result = await authService.login(sanitizedUserName, password);
 
-      if (!employee) {
+      if (!result) {
         return res.status(401).json({
           success: false,
           error: 'ユーザー名またはパスワードが正しくありません'
         });
       }
 
-      // セッションに保存
-      req.session.employeeId = employee.id;
-      req.session.loginId = employee.userName;
-      req.session.employeeName = employee.employeeName;
-      req.session.role = employee.role;
-      req.session.color = employee.color;
+      const { employee, token } = result;
 
       res.json({
         success: true,
@@ -49,7 +44,8 @@ class AuthController {
           employeeName: employee.employeeName,
           role: employee.role,
           roleName: employee.employeeRole?.roleName,
-          color: employee.color
+          color: employee.color,
+          token: token // JWTトークンを返す
         }
       });
 
@@ -63,21 +59,15 @@ class AuthController {
    */
   async logout(req, res, next) {
     try {
-      const employeeId = req.session?.employeeId;
+      const employeeId = req.user?.employeeId;
 
-      req.session.destroy((err) => {
-        if (err) {
-          logger.error(`Session destroy error: ${err.message}`, { employeeId });
-          return next(err);
-        }
+      // JWT認証ではサーバー側でトークンを無効化しない
+      // クライアント側でトークンを削除する
+      logger.info(`Logout successful: ${employeeId}`);
 
-        res.clearCookie('connect.sid');
-        logger.info(`Logout successful: ${employeeId}`);
-
-        res.json({
-          success: true,
-          message: 'ログアウトしました'
-        });
+      res.json({
+        success: true,
+        message: 'ログアウトしました'
       });
 
     } catch (error) {
@@ -86,21 +76,21 @@ class AuthController {
   }
 
   /**
-   * セッション確認
+   * トークン確認（セッション確認の代わり）
    */
-  async checkSession(req, res, next) {
+  async checkAuth(req, res, next) {
     try {
-      if (!req.session || !req.session.employeeId) {
+      // requireAuthミドルウェアを通過していればreq.userが設定されている
+      if (!req.user) {
         return res.json({
           success: true,
           authenticated: false
         });
       }
 
-      const employee = await authService.validateSession(req.session.employeeId);
+      const employee = await authService.validateSession(req.user.employeeId);
 
       if (!employee) {
-        req.session.destroy();
         return res.json({
           success: true,
           authenticated: false
@@ -130,7 +120,7 @@ class AuthController {
   async changePassword(req, res, next) {
     try {
       const { newPassword, confirmPassword } = req.body;
-      const employeeId = req.session.employeeId;
+      const employeeId = req.user.employeeId; // JWTから取得
 
       // バリデーション
       if (!newPassword || !confirmPassword) {

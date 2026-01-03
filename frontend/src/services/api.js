@@ -13,6 +13,12 @@ const api = axios.create({
 // リクエストインターセプター
 api.interceptors.request.use(
   (config) => {
+    // JWTトークンを自動付与
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
     // ローディング表示などの処理をここに追加可能
     return config;
   },
@@ -32,8 +38,14 @@ api.interceptors.response.use(
       const { status, data } = error.response;
 
       if (status === 401) {
-        // 認証エラー時はログイン画面へ
-        router.push('/login');
+        // 認証エラー時はトークンを削除してログイン画面へ
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        
+        // ログインページ以外ならリダイレクト
+        if (router.currentRoute.value.path !== '/login') {
+          router.push('/login');
+        }
       } else if (status === 403) {
         // 権限エラー
         console.error('アクセス権限がありません');

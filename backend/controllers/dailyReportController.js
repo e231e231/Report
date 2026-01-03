@@ -17,7 +17,7 @@ class DailyReportController {
       const sanitizedContent = sanitizeHtml(content);
 
       const dailyReport = await dailyReportService.createDailyReport({
-        employeeId: req.session.employeeId,
+        employeeId: req.user.employeeId,
         content: sanitizedContent,
         calendar: calendar || new Date()
       });
@@ -35,7 +35,7 @@ class DailyReportController {
       const reports = await dailyReportService.getDailyReportList(
         date || new Date(),
         roleFilter || 'All',
-        req.session.employeeId
+        req.user.employeeId
       );
       res.json({ success: true, data: reports });
     } catch (error) {
@@ -47,7 +47,7 @@ class DailyReportController {
   async getDetail(req, res, next) {
     try {
       const { id } = req.params;
-      const report = await dailyReportService.getDailyReportDetail(id, req.session.employeeId);
+      const report = await dailyReportService.getDailyReportDetail(id, req.user.employeeId);
       res.json({ success: true, data: report });
     } catch (error) {
       next(error);
@@ -71,7 +71,7 @@ class DailyReportController {
       const report = await dailyReportService.updateDailyReport(
         id,
         { content: sanitizedContent },
-        req.session.employeeId
+        req.user.employeeId
       );
 
       res.json({ success: true, data: report });
@@ -162,7 +162,7 @@ class DailyReportController {
         parseInt(year),
         parseInt(month),
         employeeId || null,
-        req.session.employeeId
+        req.user.employeeId
       );
       res.json({ success: true, data: reports });
     } catch (error) {

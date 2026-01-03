@@ -9,8 +9,8 @@ router.post('/login', authController.login);
 // ログアウト
 router.post('/logout', requireAuth, authController.logout);
 
-// セッション確認
-router.get('/session', authController.checkSession);
+// トークン確認（旧セッション確認）
+router.get('/check', requireAuth, authController.checkAuth);
 
 // パスワード変更
 router.post('/change-password', requireAuth, authController.changePassword);

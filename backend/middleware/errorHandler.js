@@ -10,7 +10,7 @@ const errorHandler = (err, req, res, next) => {
     method: req.method,
     url: req.url,
     ip: req.ip,
-    userId: req.session?.employeeId,
+    userId: req.user?.employeeId,
     stack: err.stack
   });
 

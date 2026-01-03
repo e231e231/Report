@@ -66,8 +66,8 @@ router.patch('/:id/role', requireAuth, requireAdmin, async (req, res, next) => {
 // カラーランダム変更
 router.post('/color/random', requireAuth, async (req, res, next) => {
   try {
-    const employee = await employeeService.updateColorRandom(req.session.employeeId);
-    req.session.color = employee.color;
+    const employee = await employeeService.updateColorRandom(req.user.employeeId);
+    // JWTの場合、colorはトークンに含まれないため再度トークンを発行する必要がある
     res.json({ success: true, data: employee });
   } catch (error) {
     next(error);
@@ -80,7 +80,7 @@ router.patch('/:id/color', requireAuth, async (req, res, next) => {
     const { color } = req.body;
 
     // 自分のカラーのみ変更可能
-    if (req.params.id !== req.session.employeeId) {
+    if (req.params.id !== req.user.employeeId) {
       return res.status(403).json({
         success: false,
         error: '権限がありません'

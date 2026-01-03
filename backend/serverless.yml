@@ -1,0 +1,162 @@
+service: dailyreport-api
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ${opt:region, 'ap-northeast-1'}
+  stage: ${opt:stage, 'dev'}
+  memorySize: 512
+  timeout: 30
+  
+  # Lambda実行ロール
+  iam:
+    role:
+      statements:
+        # S3アクセス権限
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:DeleteObject
+          Resource: 
+            - "arn:aws:s3:::${self:custom.s3BucketName}/*"
+        # CloudWatch Logs権限
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: "*"
+        # RDS Proxy接続権限（VPC内のRDSに接続する場合）
+        - Effect: Allow
+          Action:
+            - rds-db:connect
+          Resource: "*"
+
+  # 環境変数
+  environment:
+    NODE_ENV: ${self:custom.environment.${self:provider.stage}.NODE_ENV}
+    DATABASE_URL: ${self:custom.environment.${self:provider.stage}.DATABASE_URL}
+    JWT_SECRET: ${self:custom.environment.${self:provider.stage}.JWT_SECRET}
+    JWT_EXPIRES_IN: ${self:custom.environment.${self:provider.stage}.JWT_EXPIRES_IN, '7d'}
+    FRONTEND_URL: ${self:custom.environment.${self:provider.stage}.FRONTEND_URL}
+    S3_BUCKET_NAME: ${self:custom.s3BucketName}
+    AWS_REGION: ${self:provider.region}
+    USE_S3: 'true'
+
+  # VPC設定（PostgreSQLがVPC内にある場合）
+  # vpc:
+  #   securityGroupIds:
+  #     - sg-xxxxxxxxx
+  #   subnetIds:
+  #     - subnet-xxxxxxxxx
+  #     - subnet-yyyyyyyyy
+
+custom:
+  # ステージごとの環境変数
+  environment:
+    dev:
+      NODE_ENV: development
+      DATABASE_URL: ${env:DATABASE_URL}
+      JWT_SECRET: ${env:JWT_SECRET}
+      FRONTEND_URL: http://localhost:8080
+    prod:
+      NODE_ENV: production
+      DATABASE_URL: ${env:DATABASE_URL_PROD}
+      JWT_SECRET: ${env:JWT_SECRET_PROD}
+      FRONTEND_URL: https://your-production-domain.com
+
+  # S3バケット名
+  s3BucketName: dailyreport-uploads-${self:provider.stage}
+
+  # Serverless Offline設定（ローカルテスト用）
+  serverless-offline:
+    httpPort: 3001
+    noPrependStageInUrl: true
+
+functions:
+  api:
+    handler: lambda.handler
+    events:
+      - http:
+          path: /
+          method: ANY
+          cors:
+            origin: ${self:provider.environment.FRONTEND_URL}
+            credentials: true
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+      - http:
+          path: /{proxy+}
+          method: ANY
+          cors:
+            origin: ${self:provider.environment.FRONTEND_URL}
+            credentials: true
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+
+resources:
+  Resources:
+    # S3バケット
+    UploadBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.s3BucketName}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedOrigins:
+                - ${self:provider.environment.FRONTEND_URL}
+              AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+              MaxAge: 3000
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+          BlockPublicPolicy: false
+          IgnorePublicAcls: false
+          RestrictPublicBuckets: false
+
+    # S3バケットポリシー（パブリック読み取り許可）
+    UploadBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref UploadBucket
+        PolicyDocument:
+          Statement:
+            - Sid: PublicReadGetObject
+              Effect: Allow
+              Principal: '*'
+              Action: 's3:GetObject'
+              Resource: !Sub 'arn:aws:s3:::${self:custom.s3BucketName}/*'
+
+plugins:
+  - serverless-offline
+  - serverless-dotenv-plugin
+
+# デプロイから除外するファイル
+package:
+  exclude:
+    - node_modules/**
+    - .git/**
+    - .env*
+    - logs/**
+    - uploads/**
+    - README.md
+    - .gitignore
+  include:
+    - node_modules/@prisma/**
+    - node_modules/.prisma/**

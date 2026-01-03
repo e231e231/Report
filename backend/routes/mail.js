@@ -20,8 +20,8 @@ router.post('/', requireAuth, async (req, res, next) => {
     const { content } = req.body;
 
     const mail = await mailService.sendMail({
-      employeeId: req.session.employeeId,
-      employeeName: req.session.employeeName,
+      employeeId: req.user.employeeId,
+      employeeName: req.user.employeeName,
       content: sanitizeHtml(content)
     });
 

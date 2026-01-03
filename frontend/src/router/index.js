@@ -103,10 +103,24 @@ router.beforeEach(async (to, from, next) => {
 
   // 認証が必要なページ
   if (to.meta.requiresAuth) {
+    // JWTトークンの存在をチェック
+    const token = localStorage.getItem('authToken');
+    
+    if (!token) {
+      next('/login');
+      return;
+    }
+
+    // Storeの状態が未認証の場合、サーバー側でトークン検証
     if (!authStore.isAuthenticated) {
-      // セッション確認
-      const isAuthenticated = await authStore.checkSession();
-      if (!isAuthenticated) {
+      try {
+        const isAuthenticated = await authStore.checkSession();
+        if (!isAuthenticated) {
+          next('/login');
+          return;
+        }
+      } catch (error) {
+        // トークン検証失敗時
         next('/login');
         return;
       }

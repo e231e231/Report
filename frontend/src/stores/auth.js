@@ -29,8 +29,14 @@ export const useAuthStore = defineStore('auth', {
 
       try {
         const response = await authService.login(userName, password);
-        this.user = response.data;
-        this.isAuthenticated = true;
+        
+        if (response.success) {
+          // トークンはauthService内でlocalStorageに保存済み
+          const { token, ...userInfo } = response.data;
+          this.user = userInfo;
+          this.isAuthenticated = true;
+        }
+        
         return response;
       } catch (error) {
         this.error = error.message;
@@ -58,11 +64,11 @@ export const useAuthStore = defineStore('auth', {
     },
 
     /**
-     * セッション確認
+     * セッション確認（JWT認証対応）
      */
     async checkSession() {
       try {
-        const response = await authService.checkSession();
+        const response = await authService.checkAuth();
         if (response.authenticated) {
           this.user = response.data;
           this.isAuthenticated = true;
@@ -75,6 +81,25 @@ export const useAuthStore = defineStore('auth', {
         this.user = null;
         this.isAuthenticated = false;
         return false;
+      }
+    },
+
+    /**
+     * 初期化（localStorageからの復元）
+     */
+    initializeAuth() {
+      const userStr = localStorage.getItem('user');
+      const token = localStorage.getItem('authToken');
+      
+      if (userStr && token) {
+        try {
+          this.user = JSON.parse(userStr);
+          this.isAuthenticated = true;
+        } catch (error) {
+          // パース失敗時はクリア
+          localStorage.removeItem('user');
+          localStorage.removeItem('authToken');
+        }
       }
     },
 
@@ -100,6 +125,11 @@ export const useAuthStore = defineStore('auth', {
      */
     updateUser(userData) {
       this.user = { ...this.user, ...userData };
+      
+      // localStorageも更新
+      if (this.user) {
+        localStorage.setItem('user', JSON.stringify(this.user));
+      }
     }
   }
 });
